@@ -1,7 +1,8 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 
-class kmneans:
+class kmeans:
     # initialize K-means object
     def __init__(self, k, max_iter=100):
         """
@@ -9,11 +10,11 @@ class kmneans:
         :param k: number of clusters
         :param max_iter: maximum number of iterations
         """
-    self.k = k
-    self.max_iter = max_iter
-    self.centroids = None
-    # fiting the model
+        self.k = k
+        self.max_iter = max_iter
+        self.centroids = None
 
+    # fitting the model
     def fit(self, X):
         """
         Fit the model to the data.
@@ -29,7 +30,7 @@ class kmneans:
 
             # update the centroids using the mean of the samples assigned to each centroid
             new_centroids = np.array([X[assignments == i].mean(axis=0)
-                                     for i in range(self.k)])
+                                       for i in range(self.k)])
 
             # check for convergence
             if np.all(centroids == new_centroids):
@@ -37,15 +38,29 @@ class kmneans:
 
             centroids = new_centroids
 
-            self.centroids = centroids
-
+        self.centroids = centroids
+        self.assignments = assignments
         return self
-    # predict the labels of the samples
 
+    # predict the labels of the samples
     def predict(self, X):
-        # assign each sample to the closest centroid
-        assignments = np.argmin(np.linalg.norm(
-            X - self.centroids, axis=1), axis=0)
+        """
+        Predict the cluster assignments for the given data points.
+        :param X: data points
+        :return: cluster assignments
+        """
+        distances = np.linalg.norm(X[:, np.newaxis] - self.centroids, axis=2)
+        assignments = np.argmin(distances, axis=1)
+        return assignments
+
+    # calculate SSE
+    def calculate_sse(self, X):
+        """
+        Calculate the Sum of Squared Errors (SSE) for the current clustering.
+        :param X: data points
+        :return: SSE value
+        """
+        return np.sum((X - self.centroids[self.assignments])**2)
 
 
 class PCA:
@@ -65,3 +80,21 @@ class PCA:
         self.components = eigenvectors[:, :self.n_components]
 
         return np.dot(X_centered, self.components)
+
+
+def elbow_method(X, max_k=10):
+        """
+        Perform the elbow method to find the optimal number of clusters.
+        :param X: data points
+        :param max_k: maximum number of clusters to test
+        """
+        sse_values = []
+
+        # Run K-means for different values of k and calculate SSE
+        for k in range(1, max_k + 1):
+            km = kmeans(k, max_iter=100)
+            km.fit(X)
+            sse = km.calculate_sse(X)
+            sse_values.append(sse)
+
+        return sse_values
